@@ -1,59 +1,4 @@
 <?php
-/*
-$hostname = "db";
-$database = "appdb";
-$usernameDB = "appuser";
-$passwordDB = "apppass";
-
-
-$conn = new mysqli($hostname, $usernameDB, $passwordDB, $database);
-
-if ($conn->connect_error) {
-
-    echo "Conexion error: " . $conn->connect_error;
-} else {
-    echo "Conexion OKAY!!";
-}
-/*
-$query = "insert into user (username,password,rol) values ('kleal','12345','admin')";
-$result = $conn->query($query);
-
-if($result){
-    echo "Insert OKAY!";
-}
-
-*/
-/*
-$query = "update user set rol ='profesor' where username='kleal'";
-$result = $conn->query($query);
-
-if($result){
-    echo "Update OKAY!";
-}
-
-
-$query = "delete from user where id=3";
-$result = $conn->query($query);
-
-if($result){
-    echo "Delete OKAY!";
-}
-
-
-$query = "select * from user";
-$result = $conn->query($query);
-
-echo "<table>
-<tr><th>Usuario</th><th>Rol</th></tr>";
-if($result->num_rows > 0) {
-    while($row = $result->fetch_assoc()) {
-        echo "<tr><td>".$row["username"]."</td><td>".$row["rol"]."</th></td>";
-    }
-}
-echo "</table>";
-
-*/
-
 $host = "db";
 $dbname = "appdb";
 $username = "appuser";
@@ -62,36 +7,69 @@ $password = "apppass";
 try {
     $conn = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password);
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    echo "<p style='color:green;'>✓ Conexión exitosa a la base de datos</p>";
 } catch (PDOException $e) {
-    die("Error de conexión: " . $e->getMessage());
+    die("<p style='color:red;'>✗ Error de conexión: " . $e->getMessage() . "</p>");
 }
 
-$stmt = $conn->query("SELECT * FROM user");
-$result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+// Consultar usuarios
+try {
+    $stmt = $conn->query("SELECT * FROM usuarios");
+    $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-echo "<table>
-<tr><th>Usuario</th><th>Rol</th></tr>";
-if (!empty($result)) {
-    foreach ($result as $row) {
-        echo "<tr><td>" . $row["username"] . "</td><td>" . $row["rol"] . "</th></td>";
+    echo "<h2>Lista de Usuarios</h2>";
+    echo "<table border='1' cellpadding='5' style='border-collapse: collapse;'>";
+    echo "<tr style='background-color: #f2f2f2;'><th>ID</th><th>Username</th><th>Rol</th><th>Fecha Creación</th></tr>";
+    
+    if (!empty($result)) {
+        foreach ($result as $row) {
+            echo "<tr>";
+            echo "<td>" . ($row['id'] ?? 'N/A') . "</td>";
+            echo "<td>" . ($row["username"] ?? 'N/A') . "</td>";
+            echo "<td>" . ($row["rol"] ?? 'usuario') . "</td>";
+            echo "<td>" . ($row["created_at"] ?? 'N/A') . "</td>";
+            echo "</tr>";
+        }
+    } else {
+        echo "<tr><td colspan='4' style='text-align:center;'>No hay usuarios registrados</td></tr>";
     }
+    echo "</table>";
+
+    // Actualizar rol
+    $stmt = $conn->prepare("UPDATE usuarios SET rol = :rol WHERE username = :username");
+    $stmt->execute(['rol' => 'admin', 'username' => 'kleal']);
+    echo "<p style='color:green;'>✓ Usuario actualizado</p>";
+
+    // Insertar nuevo usuario
+    $password_hash = password_hash('12345', PASSWORD_BCRYPT);
+    $stmt = $conn->prepare("INSERT INTO usuarios (username, password, rol) VALUES (:username, :password, :rol)");
+    $result = $stmt->execute([
+        'username' => 'nuevo_usuario', 
+        'password' => $password_hash,
+        'rol' => 'usuario'
+    ]);
+    
+    if ($result) {
+        echo "<p style='color:green;'>✓ Nuevo usuario insertado</p>";
+    }
+
+} catch (PDOException $e) {
+    echo "<p style='color:red;'>Error en la consulta: " . $e->getMessage() . "</p>";
+    echo "<p>Posibles soluciones:</p>";
+    echo "<ul>";
+    echo "<li>Ejecuta el script SQL para crear la tabla 'usuarios'</li>";
+    echo "<li>Verifica que la base de datos 'appdb' existe</li>";
+    echo "<li>Verifica las credenciales en PHPMyAdmin</li>";
+    echo "</ul>";
 }
 
-echo "</table>";
-
-$stmt = $conn->prepare("update user set rol =:rol where username=:username");
-$stmt->execute(['rol' => 'admin', 'username' => 'kleal']);
-
-
-$stmt = $conn->prepare("DELETE FROM user WHERE id = :id");
-$stmt->execute(['id' => 3]);
-
-$password = password_hash('12345',PASSWORD_BCRYPT);
-$stmt = $conn->prepare("INSERT INTO user (username, password) VALUES (:username, :password)");
-$result = $stmt->execute(['username' => 'tleal','password'=> $password]);
-
+// Mostrar información de depuración
+echo "<hr>";
+echo "<h3>Información de Depuración:</h3>";
+echo "<p><strong>GET parameters:</strong> ";
 print_r($_GET);
+echo "</p>";
 
 $page = $_GET['page'] ?? 'login';
-
-echo $page;
+echo "<p><strong>Página actual:</strong> " . htmlspecialchars($page) . "</p>";
+?>

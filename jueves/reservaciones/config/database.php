@@ -1,27 +1,50 @@
 <?php
+// reservaciones/config/database.php
 
 class Database
 {
-
     private $host = "db";
-    private $db = "appdb";
-    private $user = "appuser";
-    private $pass = "apppass";
+    private $db_name = "appdb";
+    private $username = "appuser";
+    private $password = "apppass";
+    public $conn;
 
+    // Conexión MySQLi
     public function connect()
     {
-
-        $conn = new mysqli(
+        $this->conn = null;
+        
+        $this->conn = new mysqli(
             $this->host,
-            $this->user,
-            $this->pass,
-            $this->db
+            $this->username,
+            $this->password,
+            $this->db_name
         );
 
-        if ($conn->connect_error) {
-            die("Error conexión: " . $conn->connect_error);
+        if ($this->conn->connect_error) {
+            die("Error conexión MySQLi: " . $this->conn->connect_error);
         }
 
-        return $conn;
+        return $this->conn;
+    }
+
+    // Conexión PDO
+    public function connectPDO()
+    {
+        $this->conn = null;
+        
+        try {
+            $this->conn = new PDO(
+                "mysql:host=" . $this->host . ";dbname=" . $this->db_name . ";charset=utf8", 
+                $this->username, 
+                $this->password
+            );
+            $this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        } catch(PDOException $e) {
+            die("Error conexión PDO: " . $e->getMessage());
+        }
+
+        return $this->conn;
     }
 }
+?>
